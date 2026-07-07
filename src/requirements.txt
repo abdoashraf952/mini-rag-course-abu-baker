@@ -8,3 +8,4 @@ langchain
 pymupdf==1.24.5
 langchain_community
 langchain_core
+motor==3.5.0
