@@ -81,7 +81,7 @@ class CohereProvider(LLMInterface):
             model=self.embedding_model_id,
             texts=[self.process_text(text)],
             input_type=input_type,
-            embeding_type = ['float']
+            embedding_types=['float']
         )
 
         if not response or not response.embeddings or not response.embeddings.float:
@@ -90,7 +90,30 @@ class CohereProvider(LLMInterface):
         
         return response.embeddings.float[0]
 
+    def embed_texts(self, texts: list[str], document_type: str = None) -> list[list[float]]:
+        if not self.client:
+            self.logger.error("Client not initialized")
+            return None
+        
+        if not self.embedding_model_id:
+            self.logger.error("Embedding model not set")
+            return None
 
+        input_type = CohereEnums.DOCUMENT.value if document_type else CohereEnums.QUERY.value
+        processed_texts = [self.process_text(text) for text in texts]
+        
+        response = self.client.embed(
+            model=self.embedding_model_id,
+            texts=processed_texts,
+            input_type=input_type,
+            embedding_types=['float']
+        )
+
+        if not response or not response.embeddings or not response.embeddings.float:
+            self.logger.error("Error getting response")
+            return None
+        
+        return response.embeddings.float
 
     def construct_prompt(self, prompt: str , role:str):
         return {"role":role,"content":self.process_text(prompt)}

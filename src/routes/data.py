@@ -6,7 +6,7 @@ from controllers import DataController, ProjectController, ProcessController
 import aiofiles
 from models import ResponseSignal
 import logging
-from schemes.data import ProcessRequest
+from routes.schemes.data import ProcessRequest
 from models.ProjectModel import ProjectModel
 from models.db_schemes.data_chunk import Data_chunk
 from models.db_schemes.asset import Asset

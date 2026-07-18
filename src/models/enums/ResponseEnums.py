@@ -15,3 +15,14 @@ class ResponseSignal(Enum):
     FILE_PROCESSING_SUCCESS = "file processing success"
 
     FILE_ID_ERROR = "file id is invalid"
+
+    PROJECT_ID_ERROR = "project id is invalid"
+
+    INSERT_INTO_VECTOR_DB_ERROR = "insert into vector db error"
+    INSERT_INTO_VECTOR_DB_SUCCESS = "insert into vector db success"
+
+    VECTOR_DB_COLLECTION_RETRIEVED = "vector db collection retrieved" 
+
+    SEARCH_IN_VECTOR_DB_SUCCESS = "search in vector db success"
+
+    SEARCH_IN_VECTOR_DB_ERROR = "search in vector db error"

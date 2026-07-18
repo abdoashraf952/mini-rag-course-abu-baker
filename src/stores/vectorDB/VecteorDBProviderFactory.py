@@ -8,9 +8,12 @@ class VectorDBProviderFactory:
         self.config = config
         self.baseController = BaseController()
 
-    def craete (self,provider:str):
+    def create(self, provider: str):
         if provider == VectorDBEnums.QDRANT.value:
-            db_path = self.baseController.get_database_path(self.config.VECTOR_DB_PATH)
+            if self.config.VECTOR_DB_PATH == ":memory:":
+                db_path = ":memory:"
+            else:
+                db_path = self.baseController.get_database_path(self.config.VECTOR_DB_PATH)
             return QdrantDB(
                 db_path=db_path,
                 distance_method=self.config.VECTOR_DB_DISTANCE_METHOD

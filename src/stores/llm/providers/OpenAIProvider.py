@@ -95,6 +95,27 @@ class OpenAIProvider(LLMInterface):
         
         return response.data[0].embedding
 
+    def embed_texts(self, texts: list[str], document_type: str = None) -> list[list[float]]:
+        if not self.client:
+            self.logger.error("Client not initialized")
+            return None
+        
+        if not self.embedding_model_id:
+            self.logger.error("Embedding model not set")
+            return None
+        
+        processed_texts = [self.process_text(text) for text in texts]
+        response = self.client.embeddings.create(
+            input=processed_texts,
+            model=self.embedding_model_id
+        )
+        if not response or not response.data or len(response.data) == 0:
+            self.logger.error("Error getting embeddings")
+            return None
+        
+        sorted_data = sorted(response.data, key=lambda x: x.index)
+        return [item.embedding for item in sorted_data]
+
     def construct_prompt(self,prompt: str , role:str):
         return {"role":role,"content":self.process_text(prompt)}
 
