@@ -12,3 +12,4 @@ motor==3.5.0
 pymongo==4.7.2
 openai>=1.0.0
 cohere
+qdrant-client
