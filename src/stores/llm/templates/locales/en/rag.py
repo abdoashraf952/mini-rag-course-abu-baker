@@ -19,5 +19,8 @@ document_prompt =Template("\n".join([
 
 footer_prompt = Template("\n".join([
     "Based on the following documents, please answer the query",
+    "## Question:",
+    "$query",
+    "",
     "### Answer:",
 ]))

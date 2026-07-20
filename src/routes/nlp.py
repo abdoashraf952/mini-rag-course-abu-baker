@@ -26,7 +26,7 @@ async def index_project(request:Request , project_id:str,push_request:PushReques
             status_code=status.HTTP_404_NOT_FOUND,
             content={"error": ResponseSignal.PROJECT_ID_ERROR.value},
         )
-    nlp_controller = NLPController(request.app.vector_db_client,request.app.generation_client,request.app.embedding_client)
+    nlp_controller = NLPController(request.app.vector_db_client, request.app.generation_client, request.app.embedding_client, request.app.template_parser)
 
     chunk_model = await ChunkModel.create_instance(request.app.db_client)
     has_records=True
@@ -80,7 +80,7 @@ async def get_index_info(request:Request , project_id:str):
             status_code=status.HTTP_404_NOT_FOUND,
             content={"error": ResponseSignal.PROJECT_ID_ERROR.value},
         )
-    nlp_controller = NLPController(request.app.vector_db_client,request.app.generation_client,request.app.embedding_client)
+    nlp_controller = NLPController(request.app.vector_db_client, request.app.generation_client, request.app.embedding_client, request.app.template_parser)
     
     collection_info = nlp_controller.get_vector_db_collection_info(project)
     
