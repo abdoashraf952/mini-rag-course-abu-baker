@@ -4,6 +4,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from helpers.config import get_settings
 from stores.llm import LLMProviderFactory
 from stores.vectorDB import VectorDBProviderFactory
+from stores.llm.templates.template_parser import TemplateParser
 
 app = FastAPI()
 async def startup_span():
@@ -19,6 +20,8 @@ async def startup_span():
     app.embedding_client.set_embedding_model(settings.EMBEDDING_MODEL_ID,settings.EMBEDDING_MODEL_SIZE)
 
     app.vector_db_client.connect()
+
+    app.template_parser = TemplateParser(language=settings.PRIMARY_LANG,default_lang=settings.DEFAULT_LANG)
     
 
 async def shutdown_span():

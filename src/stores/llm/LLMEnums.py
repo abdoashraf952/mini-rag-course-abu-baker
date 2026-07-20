@@ -6,10 +6,10 @@ class LLMEnum(Enum):
     COHERE = "COHERE"
 
 class OpenAIEnums(Enum):
-    SYSTEM = "SYSTEM"
-    USER = "USER"
-    ASSISTANT = "ASSISTANT"
-
+    SYSTEM = "system"
+    USER = "user"
+    ASSISTANT = "assistant"
+    
 class CohereEnums(Enum):
     SYSTEM = "SYSTEM"
     USER = "USER"

@@ -112,7 +112,7 @@ async def search_in_vector_db(request:Request , project_id:str , search_request:
             status_code=status.HTTP_404_NOT_FOUND,
             content={"error": ResponseSignal.PROJECT_ID_ERROR.value},
         )
-    nlp_controller = NLPController(request.app.vector_db_client,request.app.generation_client,request.app.embedding_client)
+    nlp_controller = NLPController(request.app.vector_db_client,request.app.generation_client,request.app.embedding_client,request.app.template_parser)
     
     results=nlp_controller.search_vector_db_collection(project,search_text,search_limit)
     
@@ -125,5 +125,36 @@ async def search_in_vector_db(request:Request , project_id:str , search_request:
     return JSONResponse(
         status_code=status.HTTP_200_OK,
         content={"signal": ResponseSignal.SEARCH_IN_VECTOR_DB_SUCCESS.value
-        ,"results":results},
+        ,"results":[result.dict() if hasattr(result, "dict") else result for result in results]},
+    )
+
+@nlp_router.get("/index/answer/{project_id}")
+async def answer_rag_question(request: Request, project_id: str, search_request: SearchRequest = None, text: str = None, limit: int = 10):
+
+    search_text = search_request.text if search_request else text
+    search_limit = search_request.limit if search_request else limit
+
+    if not search_text:
+        return JSONResponse(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            content={"error": "Field 'text' is required"},
+        )
+
+    project_model = await ProjectModel.create_instance(request.app.db_client)
+    project = await project_model.get_project_or_create_one(project_id)
+
+    nlp_controller = NLPController(request.app.vector_db_client, request.app.generation_client, request.app.embedding_client, request.app.template_parser)
+
+    answer, full_prompt, chat_history = nlp_controller.answer_rag_qustion(project, search_text, search_limit)
+
+    if not answer:
+        return JSONResponse(
+            status_code=status.HTTP_404_NOT_FOUND,
+            content={"error": ResponseSignal.ANSWER_RAG_QUESTION_ERROR.value},
+        )
+
+    return JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content={"signal": ResponseSignal.ANSWER_RAG_QUESTION_SUCCESS.value,
+                  "answer": answer, "full_prompt": full_prompt, "chat_history": chat_history},
     )
