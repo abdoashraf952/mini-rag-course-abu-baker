@@ -204,7 +204,7 @@ cython_debug/
 # .vscode/
 # Temporary file for partial code execution
 tempCodeRunnerFile.py
-
+Miniconda3-latest-Linux-x86_64.sh
 # Ruff stuff:
 .ruff_cache/
 
