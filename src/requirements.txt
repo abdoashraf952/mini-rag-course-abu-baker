@@ -13,3 +13,7 @@ pymongo==4.7.2
 openai>=1.0.0
 cohere
 qdrant-client
+SQLAlchemy
+asyncpg
+alembic
+psycopg2

@@ -1,5 +1,5 @@
 from .BaseController import BaseController
-from models.db_schemes import Project , Data_chunk
+from models.db_schemes import Project , DataChunk
 from stores.llm.LLMEnums import DocumentTypeEnum
 from typing import List
 import json
@@ -19,11 +19,11 @@ class NLPController(BaseController):
         return f"collection_{project_id}".strip()
 
     def reset_vector_db_collection(self,project:Project):
-        collection_name = self.create_collection_name(project.id)
+        collection_name = self.create_collection_name(project.project_id)
         return self.vector_client.delete_collection(collection_name)
 
     def get_vector_db_collection_info(self,project:Project):
-        collection_name = self.create_collection_name(project.id)
+        collection_name = self.create_collection_name(project.project_id)
         collection_info = self.vector_client.get_collection_info(collection_name)
         if collection_info is None:
             return None
@@ -31,9 +31,9 @@ class NLPController(BaseController):
             json.dumps(collection_info,default=lambda x:x.__dict__)
             )
 
-    def index_into_vector_db(self,project:Project,chunks:List[Data_chunk],chunks_ids:List[int],do_reset:bool=False):
+    def index_into_vector_db(self,project:Project,chunks:List[DataChunk],chunks_ids:List[int],do_reset:bool=False):
 
-        collection_name = self.create_collection_name(project.id)
+        collection_name = self.create_collection_name(project.project_id)
 
         texts = [chunk.chunk_text for chunk in chunks]
         metadata = [chunk.chunk_metadata for chunk in chunks]
@@ -48,7 +48,7 @@ class NLPController(BaseController):
         return True   
 
     def search_vector_db_collection(self,project:Project,text:str,limit:int = 10):
-        collection_name = self.create_collection_name(project.id)
+        collection_name = self.create_collection_name(project.project_id)
         vector = self.embedding_client.embed_text(text, document_type=DocumentTypeEnum.QUERY.value)
 
         if not vector or len(vector)==0:
@@ -71,7 +71,7 @@ class NLPController(BaseController):
         documents_prompt = "\n\n".join([
             self.template_parser.get("rag","document_prompt",{
                 "doc_no":idx+1,
-                "chunk_text":doc["text"]
+                "chunk_text":self.generation_client.process_text(doc["text"])
             }) for idx, doc in enumerate(retrived_documents)
         ])
 

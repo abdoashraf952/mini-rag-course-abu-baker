@@ -16,7 +16,7 @@ nlp_router = APIRouter(
 )
 
 @nlp_router.post("/push/{project_id}")
-async def index_project(request:Request , project_id:str,push_request:PushRequest):
+async def index_project(request:Request , project_id:int,push_request:PushRequest):
 
     project_model = await ProjectModel.create_instance(request.app.db_client)
     project = await project_model.get_project_or_create_one(project_id)
@@ -35,7 +35,7 @@ async def index_project(request:Request , project_id:str,push_request:PushReques
     idx=0
 
     while has_records:
-        chunks = await chunk_model.get_data_chunks(project_id=project.id,page_no=page_no)
+        chunks = await chunk_model.get_DataChunks(project_id=project.project_id, page_no=page_no)
         if len(chunks):
             page_no+=1
 
@@ -70,7 +70,7 @@ async def index_project(request:Request , project_id:str,push_request:PushReques
     
 
 @nlp_router.get("/index/info/{project_id}")  
-async def get_index_info(request:Request , project_id:str):
+async def get_index_info(request:Request , project_id:int):
 
     project_model = await ProjectModel.create_instance(request.app.db_client)
     project = await project_model.get_project_or_create_one(project_id)
@@ -92,7 +92,7 @@ async def get_index_info(request:Request , project_id:str):
     
 
 @nlp_router.get("/index/search/{project_id}")
-async def search_in_vector_db(request:Request , project_id:str , search_request:SearchRequest=None, text:str=None , limit:int = 10):
+async def search_in_vector_db(request:Request , project_id:int , search_request:SearchRequest=None, text:str=None , limit:int = 10):
 
     # Support both GET (query params) and POST (JSON body)
     search_text = search_request.text if search_request else text
@@ -129,7 +129,7 @@ async def search_in_vector_db(request:Request , project_id:str , search_request:
     )
 
 @nlp_router.get("/index/answer/{project_id}")
-async def answer_rag_question(request: Request, project_id: str, search_request: SearchRequest = None, text: str = None, limit: int = 10):
+async def answer_rag_question(request: Request, project_id: int, search_request: SearchRequest = None, text: str = None, limit: int = 10):
 
     search_text = search_request.text if search_request else text
     search_limit = search_request.limit if search_request else limit
