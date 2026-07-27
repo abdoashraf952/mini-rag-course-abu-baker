@@ -1,7 +1,9 @@
+from sqlalchemy import union
 from ..LLMInterface import LLMInterface
 from ..LLMEnums import CohereEnums
 import cohere
 import logging
+from typing import Union,List
 
 class CohereProvider(LLMInterface):
 
@@ -88,9 +90,9 @@ class CohereProvider(LLMInterface):
             self.logger.error("Error getting response")
             return None
         
-        return response.embeddings.float[0]
+        return response.embeddings.float
 
-    def embed_texts(self, texts: list[str], document_type: str = None) -> list[list[float]]:
+    def embed_texts(self, texts:Union[List[str],str], document_type: str = None) :
         if not self.client:
             self.logger.error("Client not initialized")
             return None
@@ -98,6 +100,9 @@ class CohereProvider(LLMInterface):
         if not self.embedding_model_id:
             self.logger.error("Embedding model not set")
             return None
+
+        if isinstance(texts, str):
+            texts = [texts]
 
         input_type = CohereEnums.DOCUMENT.value if document_type else CohereEnums.QUERY.value
         processed_texts = [self.process_text(text) for text in texts]

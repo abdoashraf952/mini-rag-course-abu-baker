@@ -20,20 +20,20 @@ async def startup_span():
 
     app.generation_client = LLMProviderFactory(settings).create(settings.GENERATION_BACKEMD)
     app.embedding_client = LLMProviderFactory(settings).create(settings.EMBEDDING_BACKEND)
-    app.vector_db_client = VectorDBProviderFactory(settings).create(settings.VECTOR_DB_BACKEND)
+    app.vector_db_client = VectorDBProviderFactory(config=settings,db_client=app.db_client).create(settings.VECTOR_DB_BACKEND)
 
 
     app.generation_client.set_generation_model(settings.GENERATION_MODEL_ID)
     app.embedding_client.set_embedding_model(settings.EMBEDDING_MODEL_ID,settings.EMBEDDING_MODEL_SIZE)
 
-    app.vector_db_client.connect()
+    await app.vector_db_client.connect()
 
     app.template_parser = TemplateParser(language=settings.PRIMARY_LANG,default_lang=settings.DEFAULT_LANG)
     
 
 async def shutdown_span():
-    app.postgres_conn.dispose()
-    app.vector_db_client.disconnect()
+    await app.postgres_conn.dispose()
+    await app.vector_db_client.disconnect()
 
 
 app.on_event("shutdown")(shutdown_span)

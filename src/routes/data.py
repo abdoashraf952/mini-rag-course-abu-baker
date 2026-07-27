@@ -13,6 +13,7 @@ from models.db_schemes.minirag.schemes.asset import Asset
 from models.ChunkModel import ChunkModel
 from models.AssetModel import AssetModel
 from models.enums.AssetTypeEnum import AssetTypeEnum
+from controllers.NLPController import NLPController
 
 logger = logging.getLogger('uvicorn.error')
 
@@ -99,6 +100,8 @@ async def process_data(request: Request,project_id: int, process_request: Proces
 
     asset_model = await AssetModel.create_instance(db_client=request.app.db_client)
 
+    nlp_controller = NLPController(request.app.vector_db_client, request.app.generation_client, request.app.embedding_client, request.app.template_parser)
+
     project_files_ids={}
     if process_request.file_id :
         asset_record = await asset_model.get_asset_record(
@@ -137,6 +140,9 @@ async def process_data(request: Request,project_id: int, process_request: Proces
     do_reset = process_request.do_reset
 
     if do_reset == 1:
+        collection_name = nlp_controller.create_collection_name(project.project_id)
+        await request.app.vector_db_client.delete_collection(collection_name)
+
         _ = await chunk_model.delete_chunks_by_project_id(project_id=project.project_id)
 
 

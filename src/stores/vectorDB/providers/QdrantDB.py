@@ -7,9 +7,12 @@ from typing import List
 
 class QdrantDB(VectorDBInterface):
 
-    def __init__(self ,db_path:str , distance_method:str):
+    def __init__(self,db_client,default_vector_size :int =786,distance_method : str =None,index_threshold:int=100):
         self.client = None
-        self.db_path = db_path
+        self.db_client = db_client
+        self.default_vector_size=default_vector_size
+        self.index_threshold=index_threshold
+        
 
         distance_method = distance_method.upper()
 
@@ -22,37 +25,38 @@ class QdrantDB(VectorDBInterface):
         else:
             raise ValueError("Invalid distance method")
         
-        self.logger = logging.getLogger(__name__)
+        self.logger = logging.getLogger('uvicorn')
 
-    def connect(self):
-        if self.db_path == ":memory:":
+    async def connect(self):
+        if self.db_client == ":memory:":
             self.client = QdrantClient(location=":memory:")
         else:
-            self.client = QdrantClient(path=self.db_path)
+            self.client = QdrantClient(path=self.db_client)
 
-    def disconnect(self):
+    async def disconnect(self):
         self.client=None
         
-    def is_connection_exsited(self,collection_name:str)->bool:
+    async def is_connection_exsited(self,collection_name:str)->bool:
         return self.client.collection_exists(collection_name)
 
-    def list_all_collections(self)->list:
+    async def list_all_collections(self)->list:
         return self.client.get_collections()
 
-    def delete_collection(self,collection_name:str):
+    async def delete_collection(self,collection_name:str):
         if self.is_connection_exsited(collection_name):
             return self.client.delete_collection(collection_name)
         return None
     
-    def get_collection_info(self,collection_name:str):
+    async def get_collection_info(self,collection_name:str):
         if not self.is_connection_exsited(collection_name):
             return None
         return self.client.get_collection(collection_name)
     
-    def create_collection(self,collection_name:str,embedding_size:int,do_reset:bool=False):
+    async def create_collection(self,collection_name:str,embedding_size:int,do_reset:bool=False):
         if do_reset:
-            _ = self.delete_collection(collection_name)
-        if not self.is_connection_exsited(collection_name):
+            _ = await self.delete_collection(collection_name)
+        if not await self.is_connection_exsited(collection_name):
+            self.logger.info(f"Creating collection: {collection_name}")
             _ = self.client.create_collection(
                 collection_name=collection_name,
                 vectors_config=models.VectorParams(
@@ -61,8 +65,8 @@ class QdrantDB(VectorDBInterface):
             return True
         return False
     
-    def insert_one(self,collection_name:str,text:str,vector:list,metadata:dict=None,recored_id:str =None):
-        if not self.is_connection_exsited(collection_name):
+    async def insert_one(self,collection_name:str,text:str,vector:list,metadata:dict=None,recored_id:str =None):
+        if not await self.is_connection_exsited(collection_name):
             self.logger.error(f"Collection {collection_name} not found")
             return False
         try:
@@ -84,7 +88,7 @@ class QdrantDB(VectorDBInterface):
             return False
         return True
     
-    def insert_many(self,collection_name:str,texts:list,vectors:list,
+    async def insert_many(self,collection_name:str,texts:list,vectors:list,
     metadata:list=None,recored_ids:list =None , batch_size:int =50):
 
         if metadata is None:
@@ -124,8 +128,8 @@ class QdrantDB(VectorDBInterface):
         return True
         
     
-    def search_by_vector(self,collection_name:str,vector:list,limit:int):
-        if not self.is_connection_exsited(collection_name):
+    async def search_by_vector(self,collection_name:str,vector:list,limit:int):
+        if not await self.is_connection_exsited(collection_name):
             self.logger.error(f"Collection {collection_name} not found")
             return None
 

@@ -2,6 +2,7 @@ from ..LLMInterface import LLMInterface
 from ..LLMEnums import OpenAIEnums
 from openai import OpenAI
 import logging
+from typing import Union,List
 
 class OpenAIProvider(LLMInterface):
     
@@ -76,7 +77,7 @@ class OpenAIProvider(LLMInterface):
         return response.choices[0].message.content.strip()
 
 
-    def embed_text(self, text:str, document_type:str = None):
+    def embed_text(self, text:Union[List[str],str], document_type:str = None):
         if not self.client:
             self.logger.error("Client not initialized")
             return None
@@ -84,7 +85,10 @@ class OpenAIProvider(LLMInterface):
         if not self.embedding_model_id:
             self.logger.error("Embedding model not set")
             return None
-        
+
+        if isinstance(text, str):
+            text =[text]
+
         response = self.client.embeddings.create(
             input=text,
             model=self.embedding_model_id
@@ -93,7 +97,7 @@ class OpenAIProvider(LLMInterface):
             self.logger.error("Error getting embeddings")
             return None
         
-        return response.data[0].embedding
+        return [item.embedding for item in response.data]
 
     def embed_texts(self, texts: list[str], document_type: str = None) -> list[list[float]]:
         if not self.client:
