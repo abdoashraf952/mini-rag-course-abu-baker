@@ -6,6 +6,7 @@ import logging
 from typing import List
 from models.db_schemes import RetrivedDocument
 from sqlalchemy.sql import text as sql_text
+from sqlalchemy.exc import IntegrityError
 import json
 
 class PGVectorProvider(VectorDBInterface):
@@ -28,12 +29,15 @@ class PGVectorProvider(VectorDBInterface):
         
     async def connect(self):
         async with self.db_client() as session:
-            async with session.begin():
-                await session.execute(
-                        sql_text(f"CREATE EXTENSION IF NOT EXISTS vector;"  )
-                    )
-
-                await session.commit()
+            try:
+                async with session.begin():
+                    await session.execute(
+                            sql_text(f"CREATE EXTENSION IF NOT EXISTS vector;"  )
+                        )
+            except IntegrityError:
+                # concurrent uvicorn workers can race on CREATE EXTENSION IF NOT EXISTS;
+                # a duplicate-key error here just means another worker created it first.
+                pass
 
     async def disconnect(self):
         pass 
