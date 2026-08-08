@@ -32,7 +32,6 @@ services:
       - backend
     restart: always
 
-
   # PostgreSQL (pgvector)
   pgvector:
     image: pgvector/pgvector:0.8.0-pg17
@@ -47,7 +46,7 @@ services:
       - backend
     restart: always
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -101,7 +100,6 @@ services:
       - backend
     restart: always
 
-
   # Node Exporter for system metrics
   node-exporter:
     image: prom/node-exporter:v1.9.1
@@ -137,6 +135,44 @@ services:
       - backend
     restart: always
 
+  # RabbitMQ
+  rabbitmq:
+    image: rabbitmq:4.2-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+      - ./rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf
+    env_file:
+      - ./env/.env.rabbitmq
+    networks:
+      - backend
+    restart: always
+    healthcheck:
+      test: [ "CMD", "rabbitmq-diagnostics", "ping" ]
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:alpine3.23
+    container_name: redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    env_file:
+      - ./env/.env.redis
+    networks:
+      - backend
+    restart: always
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      timeout: 5s
+      retries: 5
+    command: [ "redis-server", "--appendonly", "yes", "--requirepass", "${REDIS_PASSWORD:-minirag_redis_pass}" ]
+
 networks:
   backend:
     driver: bridge
@@ -147,3 +183,6 @@ volumes:
   qdrant_data:
   prometheus_data:
   grafana_data:
+  rabbitmq_data:
+  redis_data:
+

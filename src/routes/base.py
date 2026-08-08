@@ -1,5 +1,9 @@
+from time import sleep
+import logging
 from fastapi import APIRouter, Depends
 from helpers.config import get_settings , Settings
+
+logger = logging.getLogger("uvicorn.error")
 
 
 router = APIRouter(
@@ -9,4 +13,4 @@ router = APIRouter(
 
 @router.get("/")
 async def wellcome(settings : Settings = Depends(get_settings)):
-    return {"name": settings.APP_NAME, "version": settings.APP_VERSION}
+    return {"name": settings.APP_NAME, "version": settings.APP_VERSION}  
