@@ -1,67 +1,108 @@
-# mini-rag
+# Requirements
 
-This is a minimal implementation of the RAG model for question answering.
+- Python 3.10
 
-## Requirements
+## Install Dependencies
 
-- Python 3.8 or later
-
-#### Install Python using MiniConda
-
-1) Download and install MiniConda from [here](https://docs.anaconda.com/free/miniconda/#quick-command-line-install)
-2) Create a new environment using the following command:
 ```bash
-$ conda create -n mini-rag python=3.8
-```
-3) Activate the environment:
-```bash
-$ conda activate mini-rag
+sudo apt update
+sudo apt install libpq-dev gcc python3-dev
 ```
 
-### (Optional) Setup you command line interface for better readability
+## Install Python using MiniConda
+
+1. Download and install MiniConda from [here](https://docs.anaconda.com/free/miniconda/#quick-command-line-install)
+2. Create a new environment using the following command:
+
+```bash
+conda create -n mini-rag python=3.10
+```
+
+3. Activate the environment:
+
+```bash
+conda activate mini-rag
+```
+
+### (Optional) Setup your command line interface for better readability
 
 ```bash
 export PS1="\[\033[01;32m\]\u@\h:\w\n\[\033[00m\]\$ "
 ```
 
+### (Optional) Run Ollama Local LLM Server using Colab + Ngrok
+
+- Check the [notebook](https://colab.research.google.com/drive/1KNi3-9KtP-k-93T3wRcmRe37mRmGhL9p?usp=sharing) + [Video](https://youtu.be/-epZ1hAAtrs)
+
 ## Installation
 
-### Install the required packages
+Install the required packages:
 
 ```bash
-$ pip install -r requirements.txt
-```
-### install dependencies
-
-```bash
-$ sudo apt update
-$ sudo apt install libpq-dev gcc python3-dev
-
+pip install -r requirements.txt
 ```
 
-### Setup the environment variables
+Setup the environment variables:
 
 ```bash
-$ cp .env.example .env
+cp .env.example .env
+```
+
+Run Alembic Migration:
+
+```bash
+alembic upgrade head
 ```
 
 Set your environment variables in the `.env` file. Like `OPENAI_API_KEY` value.
 
-## Run Docker compose Services
-```bash
-$ cd docker
-$ cp .env.example .env
-$ docker compose up -d 
-```
-- update `.env` file with your credentials.
-
-
-
-
-
-## Run the FastAPI server
+## Run Docker Compose Services
 
 ```bash
-$ uvicorn main:app --reload --host 0.0.0.0 --port 5000
+cd docker
+cp .env.example .env
 ```
 
+- Update `.env` with your credentials
+
+```bash
+cd docker
+sudo docker compose up -d
+```
+
+## Access Services
+
+- FastAPI: [http://localhost:8000](http://localhost:8000/)
+- Flower Dashboard: [http://localhost:5555](http://localhost:5555/) (admin/password from env)
+- Grafana: [http://localhost:3000](http://localhost:3000/)
+- Prometheus: [http://localhost:9090](http://localhost:9090/)
+
+## Run the FastAPI server (Development Mode)
+
+```bash
+uvicorn main:app --reload --host 0.0.0.0 --port 5000
+```
+
+## Celery (Development Mode)
+
+For development, you can run Celery services manually instead of using Docker.
+
+To run the Celery worker, run the following command in a separate terminal:
+
+```bash
+python -m celery -A celery_app worker --queues=default,file_processing_queue,data_indexing_queue,index_data_queue  --loglevel=info
+```
+
+To run the Beat scheduler, run the following command in a separate terminal:
+
+```bash
+python -m celery -A celery_app beat --loglevel=info
+```
+
+To run the Flower Dashboard, run the following command in a separate terminal:
+
+```bash
+python -m celery -A celery_app flower --conf=flowerconfig.py
+```
+
+Open your browser and go to `http://localhost:5555` to see the dashboard.
