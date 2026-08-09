@@ -50,7 +50,8 @@ celery_app = Celery(
     "mini_rag",
     broker=settings.CELERY_BROKER_URL,
     backend=settings.CELERY_BROKER_BACKEND,
-    include=["tasks.file_processing"]
+    include=["tasks.file_processing", "tasks.data_indexing","tasks.process_workflow"
+    ,"tasks.maintenance"]
 )
 
 celery_app.conf.update(
@@ -70,10 +71,21 @@ celery_app.conf.update(
     worker_cancel_long_running_tasks_on_connection_loss = True,
 
     task_routes={
-        "tasks.file_processing.process_project_files" : {"queue":"file_processing_queue"}
+        "tasks.file_processing.process_project_files" : {"queue":"file_processing_queue"},
+        "tasks.process_workflow.push_after_process_task" : {"queue":"push_after_process_task_queue"},
+        "tasks.data_indexing.index_data_content" : {"queue":"index_data_queue"},
+        "tasks.maintenance.cleanup_old_task" : {"queue":"default"}
     }
 
 )
+celery_app.conf.beat_schedule = {
+    "cleanup_old_tasks":{
+        "task": "tasks.maintenance.cleanup_old_task",
+        "schedule": 86400,
+        "args":()
+    },
+}
+celery_app.conf.timezone = 'UTC'
 
 celery_app.conf.task_default_queue = "default"
 

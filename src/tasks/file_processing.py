@@ -10,6 +10,7 @@ from models import ResponseSignal
 from models.enums.AssetTypeEnum import AssetTypeEnum
 from controllers.NLPController import NLPController
 import logging
+from utils.idempotency_manager import IdempotencyManager
 
 logger = logging.getLogger("celery.task")
 
@@ -28,6 +29,50 @@ async def _process_project_files(task_instance,project_id:int,file_id:int,chunk_
         (db_engine, db_client,generation_client, embedding_client,
         vector_db_client, template_parser,llm_provider_factory
         ,vectordb_provider_factory) = await get_setup_utils()
+
+        idempotency_manager = IdempotencyManager(db_client=db_client,db_engine=db_engine)
+        task_args = {
+            "project_id":project_id,
+            "file_id":file_id,
+            "chunk_size":chunk_size,
+            "overlap_size":overlap_size,
+            "do_reset":do_reset
+        }
+        task_name = "task.file_processing.process_project_files"
+        settings = get_settings()
+
+        should_execute , existing_task = await idempotency_manager.should_execute_task(
+            task_name=task_name,
+            task_args=task_args,
+            celery_task_id=task_instance.request.id,
+            task_time_limit=settings.CELERY_TASK_TIME_LIMIT
+        )
+
+        if not should_execute:
+            logger.warning(f"Can not hundel task with task id : {existing_task.status}")
+            return existing_task.result
+
+        task_record = None
+
+        if existing_task:
+
+            await idempotency_manager.update_task_status(
+                execution_id=existing_task.execution_id,
+                status="PENDING"
+            )
+            task_record = existing_task
+        else:
+            task_record = await idempotency_manager.create_task_record(
+                task_name=task_name,
+                task_args=task_args,
+                celery_task_id=task_instance.request.id
+            )
+
+        await idempotency_manager.update_task_status(
+            execution_id=task_record.execution_id,
+            status="STARTED"
+        )
+        
         
         process_controller = ProcessController(project_id=project_id)
 
@@ -53,6 +98,11 @@ async def _process_project_files(task_instance,project_id:int,file_id:int,chunk_
                         "signal": ResponseSignal.FILE_ID_ERROR.value
                     }
                 )
+                await idempotency_manager.update_task_status(
+                    execution_id=task_record.execution_id,
+                    status="FAILURE",
+                    result={"signal": ResponseSignal.FILE_ID_ERROR.value}
+                )
                 raise Exception(ResponseSignal.FILE_ID_ERROR.value)
 
             project_files_ids = {asset_record.asset_id:asset_record.asset_name}
@@ -71,6 +121,11 @@ async def _process_project_files(task_instance,project_id:int,file_id:int,chunk_
                     meta={
                         "signal": ResponseSignal.FILE_NOT_FOUND.value
                     }
+                )
+                await idempotency_manager.update_task_status(
+                    execution_id=task_record.execution_id,
+                    status="FAILURE",
+                    result={"signal": ResponseSignal.FILE_NOT_FOUND.value}
                 )
                 raise Exception(ResponseSignal.FILE_NOT_FOUND.value)
         no_records = 0
@@ -128,8 +183,15 @@ async def _process_project_files(task_instance,project_id:int,file_id:int,chunk_
                 state='SUCCESS',
                 meta={
                     "signal": ResponseSignal.FILE_PROCESSING_SUCCESS.value,
-                    "inserted_records": no_records,
-                    "processed_files": no_files,
+
+                }
+            )
+            await idempotency_manager.update_task_status(
+                execution_id=task_record.execution_id,
+                status="SUCCESS",
+                result={
+                    "signal": ResponseSignal.FILE_PROCESSING_SUCCESS.value,
+                    
                 }
             )
 
@@ -137,6 +199,8 @@ async def _process_project_files(task_instance,project_id:int,file_id:int,chunk_
             "signal": ResponseSignal.FILE_PROCESSING_SUCCESS.value,
             "inserted_records": no_records,
             "processed_files": no_files,
+            "project_id":project_id,
+            "do_reset":do_reset
         }
     except Exception as e:
         logger.error(f"Error while processing file: {e}")

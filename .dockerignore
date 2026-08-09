@@ -1,0 +1,29 @@
+# NOTE: docker matches these against paths relative to the build context root
+# and does NOT recurse implicitly the way .gitignore does — hence the **/ prefixes.
+
+.git/
+.gitignore
+
+# Python bytecode / caches
+**/__pycache__/
+**/*.py[cod]
+**/*.egg-info/
+**/.pytest_cache/
+**/.mypy_cache/
+
+# Local virtualenvs
+**/.venv/
+**/venv/
+
+# Secrets and local config — compose supplies these via env_file at runtime
+**/.env
+
+# Celery beat state written by the host (the host Python's dbm format is not
+# readable by the container's Python, which corrupts beat on startup)
+**/celerybeat-schedule*
+**/celerybeat.pid
+
+# Local runtime data
+src/assets/
+**/*.sqlite3
+**/*.log
